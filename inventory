@@ -1,0 +1,10 @@
+# all of yout hosts
+[all]
+# host 1
+# host 2
+# host N
+
+
+# the master with public IP
+[master]
+# host 1

@@ -1,0 +1,97 @@
+---
+- hosts: all
+  gather_facts: False
+  become: yes
+  become_method: sudo
+  tasks:
+  - name: install python 2
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+- hosts: all
+  become: yes
+  strategy: debug
+  become_method: sudo
+  tasks:
+  - name: upgrade base packages
+    apt:
+      upgrade: dist
+      update_cache: yes
+  - name: check if the setup script was run
+    stat:
+      path: /opt/h2oai/get-id.sh
+    register: st
+  - name: copy setup script
+    template:
+      src: templates/setup-h2o.sh.j2
+      dest: /tmp/setup-h2o.sh
+      mode: 0755
+    when: st.stat.exists == False
+  - name: run setup script
+    shell: /tmp/setup-h2o.sh
+    when: st.stat.exists == False
+  - name: add h2o user
+    user:
+      name: h2o
+      comment: "h2o user"
+  - name: create flatfile
+    template:
+      src: templates/flatfile.txt.j2
+      dest: /home/h2o/flatfile.txt
+  - name: create h2o start file 
+    template:
+      src: templates/start-h2o.sh.j2
+      dest: /home/h2o/start-h2o.sh
+      mode: 0755
+      owner: h2o
+
+
+- hosts: master
+  become: yes
+  become_method: sudo
+  tasks:
+  - name: update IP on DNS    
+    shell: >
+      curl "https://{{ nsupdate_user }}:{{ nsupdate_passwd }}@nsupdate.fedcloud.eu/nic/update?myip={{ public_ip }}"
+  - name: install nginx
+    apt:
+      update_cache: yes
+      name: nginx 
+  - name: nginx configuration
+    template:
+      src: templates/nginx-default.j2
+      dest: /etc/nginx/sites-available/default
+      mode: 0644
+  - name: http redirect to https
+    template:
+      src: templates/nginx-redirect.j2
+      dest: /etc/nginx/conf.d/httpredirect.conf
+      mode: 0644
+  - name: Add certbot repo
+    apt_repository:
+      repo: 'ppa:certbot/certbot'
+  - name: install certbot
+    apt:
+      update_cache: yes
+      name: python-certbot-nginx 
+  - name: get certificates
+    shell: >
+      certbot --nginx -d "{{ public_name }}" -n --agree-tos -m "{{ letsencrypt_email }}"
+  - name: set httpasswd
+    shell: > 
+      htpasswd -b -c /opt/h2oai/htpasswd h2oai "{{ h2oai_password }}"
+  - name: start jupyter
+    become_user: h2o
+    shell: > 
+      cd /data
+      nohup jupyter notebook --no-browser --NotebookApp.token="" &
+  - name: create password for h2o
+    become_user: h2o
+    shell: >
+      PASS=$(java -cp /opt/h2o.jar org.eclipse.jetty.util.security.Password h2oai "{{ h2oai_password }}" | grep CRYPT)
+      echo "h2oai: $PASS" > /home/h2o/realm.properties
+
+- hosts: all 
+  tasks:
+  - name: start h2o
+    become_user: h2o
+    shell: /home/h2o/start-h2o.sh 

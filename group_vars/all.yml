@@ -1,0 +1,20 @@
+# H2O Version to use
+h2oBranch: rel-turchin
+
+# H2O port to use (default is 5432)
+h2oPort: 5432 
+
+# Set if you are using some bastion host
+# ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q user@bastion"'
+
+# Details about the domain 
+nsupdate_user: changeme.fedcloud-tf.fedcloud.eu 
+nsupdate_passwd: hostnsupdatepassword 
+# public ip of the host
+public_ip: 192.168.1.1 
+public_name: changeme.fedcloud-tf.fedcloud.eu 
+letsencrypt_email: youremail@example.com 
+
+# password for the h2oai user for accessing the web frontends
+h2oai_password: DO_CHANGE_ME_DO_NOT_USE_A_VALUABLE_PASSWORD 
+
