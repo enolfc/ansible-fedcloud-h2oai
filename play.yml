@@ -9,7 +9,6 @@
 
 - hosts: all
   become: yes
-  strategy: debug
   become_method: sudo
   tasks:
   - name: upgrade base packages
@@ -37,7 +36,7 @@
     template:
       src: templates/flatfile.txt.j2
       dest: /home/h2o/flatfile.txt
-  - name: create h2o start file 
+  - name: create h2o start file
     template:
       src: templates/start-h2o.sh.j2
       dest: /home/h2o/start-h2o.sh
@@ -49,13 +48,13 @@
   become: yes
   become_method: sudo
   tasks:
-  - name: update IP on DNS    
+  - name: update IP on DNS
     shell: >
       curl "https://{{ nsupdate_user }}:{{ nsupdate_passwd }}@nsupdate.fedcloud.eu/nic/update?myip={{ public_ip }}"
   - name: install nginx
     apt:
       update_cache: yes
-      name: nginx 
+      name: nginx
   - name: nginx configuration
     template:
       src: templates/nginx-default.j2
@@ -72,26 +71,28 @@
   - name: install certbot
     apt:
       update_cache: yes
-      name: python-certbot-nginx 
+      name: python-certbot-nginx
   - name: get certificates
     shell: >
       certbot --nginx -d "{{ public_name }}" -n --agree-tos -m "{{ letsencrypt_email }}"
   - name: set httpasswd
-    shell: > 
+    shell: >
       htpasswd -b -c /opt/h2oai/htpasswd h2oai "{{ h2oai_password }}"
   - name: start jupyter
     become_user: h2o
-    shell: > 
+    shell: |
+      set -x
       cd /data
       nohup jupyter notebook --no-browser --NotebookApp.token="" &
   - name: create password for h2o
     become_user: h2o
-    shell: >
-      PASS=$(java -cp /opt/h2o.jar org.eclipse.jetty.util.security.Password h2oai "{{ h2oai_password }}" | grep CRYPT)
+    shell: |
+      set -x
+      PASS=$(java -cp /opt/h2o.jar org.eclipse.jetty.util.security.Password h2oai "{{ h2oai_password }}" 2>&1 | grep CRYPT)
       echo "h2oai: $PASS" > /home/h2o/realm.properties
 
-- hosts: all 
+- hosts: all
   tasks:
   - name: start h2o
     become_user: h2o
-    shell: /home/h2o/start-h2o.sh 
+    shell: /home/h2o/start-h2o.sh

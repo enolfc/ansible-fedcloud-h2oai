@@ -2,7 +2,11 @@
 
 set -e
 
+set -x
+
 d=`dirname $0`
+
+pushd $d
 
 H2O_JAR=/opt/h2o.jar
 
@@ -22,26 +26,26 @@ ${JAVA_HOME}/bin/java -version
 ${JAVA_HOME}/bin/java -jar $H2O_JAR -version
 
 # HDFS credentials.
-#hdfs_config_option=""
-#hdfs_config_value=""
-#hdfs_option=""
-#hdfs_option_value=""
-#hdfs_version=""
-#if [ -f .ec2/core-site.xml ]
-#then
-#    hdfs_config_option="-hdfs_config"
-#    hdfs_config_value=".ec2/core-site.xml"
-#    hdfs_option="-hdfs"
-#    hdfs_option_value=""
-#    hdfs_version=""
-#fi
+hdfs_config_option=""
+hdfs_config_value=""
+hdfs_option=""
+hdfs_option_value=""
+hdfs_version=""
+if [ -f .ec2/core-site.xml ]
+then
+    hdfs_config_option="-hdfs_config"
+    hdfs_config_value=".ec2/core-site.xml"
+    hdfs_option="-hdfs"
+    hdfs_option_value=""
+    hdfs_version=""
+fi
 
 # AWS credentials.
-#aws_credentials=""
-#if [ -f .ec2/aws_credentials.properties ]
-#then
-#    aws_credentials="--aws_credentials=.ec2/aws_credentials.properties"
-#fi
+aws_credentials=""
+if [ -f .ec2/aws_credentials.properties ]
+then
+    aws_credentials="--aws_credentials=.ec2/aws_credentials.properties"
+fi
 
 pass_credentials=""
 if [ -f ./realm.properties ]
